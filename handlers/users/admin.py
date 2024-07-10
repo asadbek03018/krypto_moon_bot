@@ -100,7 +100,7 @@ async def done(message: types.Message, state: FSMContext):
     await bot.send_message(chat_id=user_id, text=user_message)
     await bot.send_message(chat_id=message.from_user.id,
                            text=f"Xabaringiz foydalanuvchiga yuborildi✅")
-
+    await state.clear()
 
 
 @router.message(F.text == "Narxlarni o'zgartirish✏", IsBotAdminFilter(ADMINS))
