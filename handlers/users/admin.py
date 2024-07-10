@@ -7,7 +7,7 @@ from aiogram_widgets.pagination import KeyboardPaginator
 from datetime import datetime
 from loader import db, bot
 from keyboards.inline.buttons import are_you_sure_markup
-from states.test import AdminState, AddCoin, Update_CoinNarx
+from states.test import AdminState, AddCoin, Update_CoinNarx, SendMessageToUser
 from filters.admin import IsBotAdminFilter
 from data.config import ADMINS
 from utils.pgtoexcel import export_to_excel
@@ -75,6 +75,32 @@ async def send_ad_to_users(message: types.Message, state: FSMContext):
             logging.info(f"Ad did not send to user: {user_id}. Error: {error}")
     await message.answer(text=f"Reklama {count} ta foydalauvchiga muvaffaqiyatli yuborildi.")
     await state.clear()
+
+
+
+@router.message(F.text == "Foydalanuvchiga xabar yuborish📤", IsBotAdminFilter(ADMINS))
+async def get_user_id(message: types.Message, state: FSMContext):
+    await message.answer("🆔Foydalanuvchi ID yozing: ")
+    await state.set_state(SendMessageToUser.user_id)
+
+@router.message(SendMessageToUser.user_id, IsBotAdminFilter(ADMINS))
+async def sending_mesage(message: types.Message, state: FSMContext):
+    await state.update_data(user_id=message.text)
+    await bot.send_message(chat_id=message.from_user.id,
+                           text="Xabaringizni yozing📤")
+    await state.set_state(SendMessageToUser.message)
+
+@router.message(SendMessageToUser.message, IsBotAdminFilter(ADMINS))
+async def done(message: types.Message, state: FSMContext):
+    await state.update_data(message=message.text)
+
+    data = await state.get_data()
+    user_id = int(data.get('user_id'))
+    user_message = data.get('message')
+    await bot.send_message(chat_id=user_id, text=user_message)
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=f"Xabaringiz foydalanuvchiga yuborildi✅")
+
 
 
 @router.message(F.text == "Narxlarni o'zgartirish✏", IsBotAdminFilter(ADMINS))
@@ -153,7 +179,7 @@ async def get_valyuta_one_delete(callback_data: types.CallbackQuery, state: FSMC
                 valyuta = callback_data.data.split("delete_valyuta:")[-1]
                 data = db.get_valyuta_name(name=valyuta)
                 try:
-                    db.delete_coin(data[1])
+                    db.delete_coin(name=data[1])
                     await callback_data.answer(text="✅Valyuta muvaffiqiyatli o'chirildi!")
                 except:
                     await callback_data.answer(text="❌Xatolik yuz berdi!")

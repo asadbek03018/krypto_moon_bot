@@ -24,3 +24,8 @@ class UpdateCardUser(StatesGroup):
 
 class Update_CoinNarx(StatesGroup):
     narx = State()
+
+
+class SendMessageToUser(StatesGroup):
+    user_id = State()
+    message = State()
